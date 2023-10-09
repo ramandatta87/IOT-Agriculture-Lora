@@ -1,0 +1,55 @@
+import time
+import spidev
+
+
+from PiicoDev_BME280 import PiicoDev_BME280
+from PiicoDev_Unified import sleep_ms # cross-platform compatible sleep function
+
+from PiicoDev_VEML6030 import PiicoDev_VEML6030
+from time import sleep
+
+light_amb = PiicoDev_VEML6030() #initialise Ambient Sensor module
+sensor = PiicoDev_BME280() # initialise the sensor
+zeroAlt = sensor.altitude() # take an initial altitude reading
+
+# Open SPI bus for capacitive sensor 
+spi = spidev.SpiDev()
+spi.open(0,0)
+spi.max_speed_hz = 1000000  # Set the SPI clock speed to 1MHz
+# Define sensor channel
+sensor_channel = 0
+
+
+# Function to read SPI data from MCP3008
+def read_channel(channel):
+    adc = spi.xfer2([1, (8 + channel) << 4, 0])
+    data = ((adc[1] & 3) << 8) + adc[2]
+    return data
+
+# Function to convert data to moisture level
+def convert_to_moisture(adc_value):
+    # Replace these values with your calibration data
+    A_dry = 0       # Placeholder: ADC value when sensor is in dry soil
+    A_wet = 1023    # Placeholder: ADC value when sensor is in wet soil
+    moisture_percent = ((adc_value - A_dry) / (A_wet - A_dry)) * 100
+    return max(0, min(moisture_percent, 100))
+
+while True:
+    # Print data
+    tempC, presPa, humRH = sensor.values() # read all data from the sensor
+    sensor_value = read_channel(sensor_channel) #read capacitive sensor data
+    moisture_level = convert_to_moisture(sensor_value) #converting moisture level to %
+    pres_hPa = presPa / 100 # convert air pressurr Pascals -> hPa (or mbar, if you prefer)
+    print(str(tempC)+" °C  " + str(pres_hPa)+" hPa  " + str(humRH)+" %RH")
+    print(f"Moisture Level: {moisture_level:.2f}%")
+    lightVal = light_amb.read()
+    print("Ambient Sensor reading : ",str(lightVal) + " lux")
+    time.sleep(5)
+    
+    
+    
+    # Altitude demo
+#     print(sensor.altitude() - zeroAlt) # Print the pressure CHANGE since the script began
+    #time.sleep_ms(100)
+
+
