@@ -34,15 +34,17 @@ static const u1_t PROGMEM APPSKEY[16] = { 0x74, 0xC7, 0x03, 0x25, 0x11, 0xDC, 0x
 
 static const u4_t DEVADDR = 0x260DF342;
 
-// Create an instance of the BME280 class
+// Using Adafruit library for creating BME280 
 Adafruit_BME280 bme;
 SparkFun_Ambient_Light veml6030(0x48); // Pass the I2C address of VEML6030
 
+//Sensor pin connection with Arduino
 int sensorPin = A0;
 int sensorValue = 0;
 int dryValue = 515;   // Replace with your dry calibration value
 int wetValue = 265;   // Replace with your wet calibration value
 
+//Variable to compute time for next reading, Initially send to 60 seconds
 unsigned long lastSendTime = 0; // Variable to store the last time we sent data
 const unsigned long sendInterval = 60000; // Interval at which to send data (1 minute)
 
@@ -50,6 +52,7 @@ void os_getArtEui(u1_t* buf) {}
 void os_getDevEui(u1_t* buf) {}
 void os_getDevKey(u1_t* buf) {}
 
+//Variable for seding "no Sensor Data message" to Things Network when no sensor is available
 static uint8_t mydata[] = "No Sensor Data";
 byte downlink_active = 0;
 byte newdata[1];
@@ -58,7 +61,7 @@ static osjob_t sendjob;
 
 const unsigned TX_INTERVAL = 60;
 
-// Pin mapping
+
 const lmic_pinmap lmic_pins = {
   .nss = 10,
   .rxtx = LMIC_UNUSED_PIN,
@@ -287,7 +290,7 @@ void loop() {
     
     // Check if there is not a current TX/RX job running
     if (!(LMIC.opmode & OP_TXRXPEND)) {
-      String sensorReadings = getSensorReadings(); // Call the new function
+      String sensorReadings = getSensorReadings(); // Call the function to read senosr data and store in String
       
       // Convert string to char array to be compatible with LoRa send function
       int str_len = sensorReadings.length() + 1; 
